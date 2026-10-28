@@ -21,7 +21,8 @@
 
 ## Встановлення
 
-Потрібен Python 3.11 або новіший. Зовнішніх бібліотек для запуску немає.
+Потрібен Python 3.11 або новіший. Для YAML-конфігурації використовується PyYAML;
+він встановлюється разом із пакетом.
 
 ```powershell
 python -m venv .venv
@@ -92,5 +93,63 @@ lab1/lab1_report.pdf - звіт
 | Робота | Тема | Матеріали |
 |---|---|---|
 | 1 | Організація професійного Python-проєкту та Git | [Завдання](lab1/task/Lab_01.docx), [звіт](lab1/lab1_report.pdf), [код](src/student_manager), [тести](tests) |
+| 2 | Структури даних та функціональна декомпозиція | [Завдання](lab2/task/Lab_02_узгоджено_з_Lab_01.docx), [звіт](lab2/lab2_report.pdf), [аналітика](src/student_manager/analytics.py) |
+| 3 | Ітератори, генератори та потокова обробка | [Завдання](lab3/task/Lab_03_узгоджено_з_Lab_01.docx), [звіт](lab3/lab3_report.pdf), [конвеєр](src/student_manager/streaming.py) |
+| 4 | Професійне ООП та система типів | [Завдання](lab4/task/Lab_04_узгоджено_з_Lab_01.docx), [звіт](lab4/lab4_report.pdf), [реєстр](src/student_manager/registry.py) |
+| 5 | Обробка помилок, файли та серіалізація | [Завдання](lab5/task/Lab_05_узгоджено_з_Lab_01.docx), [звіт](lab5/lab5_report.pdf), [імпорт та експорт](src/student_manager/reliable_io.py) |
 
-Наступні роботи продовжуватимуть цей самий проєкт.
+Усі роботи продовжують один пакет. Стан першої роботи збережений у тегу `lab1`.
+
+## Роботи 2-5
+
+```powershell
+python -m student_manager.main --lab2
+python -m student_manager.main --lab3 lab3/task/students.csv
+python -m student_manager.main --lab4
+python -m student_manager.main --config lab5/task/config.yaml
+```
+
+Робота 2 додає унікальні групи, загальний середній бал, рейтинг, групування,
+кількість студентів і словниковий індекс прізвищ. Індекс зберігає всіх
+однофамільців. Фільтр бала тут використовує строге `>`.
+
+Починаючи з роботи 3, CSV має точний заголовок:
+
+```csv
+student_id,first_name,last_name,group,average_grade
+1,Олена,Коваль,ФеП-33,91.5
+```
+
+ID є додатним цілим числом; текстові поля непорожні, оцінка скінченна в межах
+0-100. Потокові фільтри використовують `>=`. Перші N збігів зберігають порядок
+джерела; top-N переглядає весь потік і обирає найбільші оцінки через heap.
+Відкривайте файлові потоки через `with open_student_stream(...)`, особливо
+для дострокового завершення. Повторний обхід потребує нового потоку.
+
+Робота 4 додає `Group`, `Grade`, `AcademicRecord`, `StudentRegistry`, generic
+repository, інтерфейс сповіщень і окремий сервіс звітів. Некоректне редагування
+не змінює попередній запис. Репозиторій залишається в пам'яті.
+
+Робота 5 читає YAML-шляхи відносно конфігурації. `skip_invalid: true` пропускає
+помилкові записи з журналюванням; `false` зупиняється на першій помилці.
+Лічильник valid враховує записи до фільтрації. JSON записується потоково
+в тимчасовий файл поряд із цільовим; заміна відбувається лише після успіху.
+Попередній результат залишається незмінним у разі помилки. Приклади містять
+лише вигадані навчальні дані. Згенеровані output/log файли не публікуються.
+
+### Експерименти та статична перевірка
+
+```powershell
+python -m student_manager.experiments lookup
+python -m student_manager.streaming_experiments --work-dir .local_workflow/lab3/scratch --output .local_workflow/lab3/experiment_results.json
+python -m student_manager.reliable_experiments
+python -m pip install -e ".[dev]"
+python -m mypy src
+python -m ruff check src tests
+python -m ruff format --check src tests
+python -m unittest discover -s tests -v
+```
+
+Великі CSV створюються для експериментів локально. Час генерації не входить
+у вимірювання. `tracemalloc` показує пік виділень Python, а не всю RAM процесу.
+Час залежить від комп'ютера та навантаження; lazy обробка не гарантує прискорення.

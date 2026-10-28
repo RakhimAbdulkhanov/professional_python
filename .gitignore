@@ -21,3 +21,5 @@ code_screenshots/
 build_report.py
 lab*/report_assets/
 lab*/evidence/
+lab*/output/
+lab*/logs/

@@ -92,8 +92,30 @@ def run_menu() -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description="Система обліку студентів")
     parser.add_argument("--demo", action="store_true", help="показати приклад роботи")
+    parser.add_argument(
+        "--lab2", action="store_true", help="показати аналітику колекцій"
+    )
+    parser.add_argument("--lab4", action="store_true", help="показати об'єктну модель")
+    parser.add_argument("--lab3", metavar="CSV", help="потокова обробка CSV")
+    parser.add_argument("--config", metavar="YAML", help="надійний імпорт та експорт")
     args = parser.parse_args()
-    if args.demo:
+    if args.lab2:
+        from student_manager.demos import run_lab2
+
+        run_lab2(create_demo_students())
+    elif args.lab4:
+        from student_manager.lab4_demo import run_demo as lab4_main
+
+        lab4_main()
+    elif args.lab3:
+        from student_manager.lab3_demo import main as lab3_main
+
+        raise SystemExit(lab3_main([args.lab3]))
+    elif args.config:
+        from student_manager.lab5_demo import run_lab5_demo
+
+        raise SystemExit(run_lab5_demo([args.config]))
+    elif args.demo:
         run_demo()
     else:
         try:

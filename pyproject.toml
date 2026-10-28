@@ -9,7 +9,10 @@ description = "Student management system for Professional Python, variant 1"
 readme = "README.md"
 requires-python = ">=3.11"
 authors = [{name = "Абдулханов Абдул-Рахім"}]
-dependencies = []
+dependencies = ["PyYAML>=6.0"]
+
+[project.optional-dependencies]
+dev = ["mypy>=1.10", "types-PyYAML>=6.0", "ruff>=0.9"]
 
 [project.scripts]
 student-manager = "student_manager.main:main"
@@ -20,3 +23,9 @@ where = ["src"]
 [tool.ruff]
 target-version = "py311"
 line-length = 88
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_unused_ignores = true
+warn_return_any = true
