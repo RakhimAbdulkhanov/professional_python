@@ -62,11 +62,18 @@ python -m student_manager.main --demo
 
 ## Перевірка
 
-Тести використовують стандартну бібліотеку, встановлювати pytest не потрібно:
+Базові тести попередніх робіт можна запускати через unittest. Повний suite
+роботи 6 використовує pytest і pytest-cov із dev dependencies:
 
 ```powershell
+python -m pip install -e ".[dev]"
+python -m pytest --cov=student_manager --cov-branch --cov-report=term-missing --cov-report=html
 python -m unittest discover -s tests -v
 ```
+
+Поріг комбінованого покриття інструкцій і гілок - 80%. HTML-звіт створюється
+локально в `htmlcov/` і не публікується. Окремо можна запустити
+`python -m pytest tests/unit -v` або `python -m pytest tests/integration -v`.
 
 Перевіряються модель, межі оцінок, порожні поля, пошук групи,
 середній бал, найкращий студент і консольні сценарії.
@@ -97,8 +104,25 @@ lab1/lab1_report.pdf - звіт
 | 3 | Ітератори, генератори та потокова обробка | [Завдання](lab3/task/Lab_03_узгоджено_з_Lab_01.docx), [звіт](lab3/lab3_report.pdf), [конвеєр](src/student_manager/streaming.py) |
 | 4 | Професійне ООП та система типів | [Завдання](lab4/task/Lab_04_узгоджено_з_Lab_01.docx), [звіт](lab4/lab4_report.pdf), [реєстр](src/student_manager/registry.py) |
 | 5 | Обробка помилок, файли та серіалізація | [Завдання](lab5/task/Lab_05_узгоджено_з_Lab_01.docx), [звіт](lab5/lab5_report.pdf), [імпорт та експорт](src/student_manager/reliable_io.py) |
+| 6 | Автоматизоване тестування | [Завдання](lab6/task/Lab_06_узгоджено_з_Lab_01.docx), [звіт](lab6/lab6_report.pdf), [експерименти](lab6/experiments.py), [тести](tests) |
 
 Усі роботи продовжують один пакет. Стан першої роботи збережений у тегу `lab1`.
+
+## Робота 6: автоматизоване тестування
+
+`tests/unit/` перевіряє модель, оцінки, реєстр і взаємодію залежностей.
+`tests/integration/` виконує справжній конвеєр CSV - валідація - JSON
+у тимчасових каталогах. Fixtures, параметризація, `pytest.approx`,
+`pytest.raises`, `monkeypatch` і Mock ізолюють сценарії. `AsyncStudentService`
+завантажує студента через асинхронний інтерфейс репозиторію; тести
+перевіряють `AsyncMock`, awaited calls і відсутність сповіщення після збою.
+
+Окремі навчальні експерименти навмисно створюють слабкі та failing tests
+в ізольованому каталозі. Вони не входять як failing cases до основного suite:
+
+```powershell
+python lab6/experiments.py --output .local_workflow/lab6/testing_experiments_results.json
+```
 
 ## Роботи 2-5
 
