@@ -126,7 +126,7 @@ jobs:
           trap 'kill -TERM "$api_pid" 2>/dev/null || true; cat "$RUNNER_TEMP/package-api.log"' EXIT
           "$py" "$RUNNER_TEMP/api_smoke.py"
           kill -TERM "$api_pid"
-          wait "$api_pid"
+          wait "$api_pid" || true
           trap - EXIT
           cat "$RUNNER_TEMP/package-api.log"
       - name: Upload distributions
