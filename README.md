@@ -105,6 +105,7 @@ lab1/lab1_report.pdf - звіт
 | 4 | Професійне ООП та система типів | [Завдання](lab4/task/Lab_04_узгоджено_з_Lab_01.docx), [звіт](lab4/lab4_report.pdf), [реєстр](src/student_manager/registry.py) |
 | 5 | Обробка помилок, файли та серіалізація | [Завдання](lab5/task/Lab_05_узгоджено_з_Lab_01.docx), [звіт](lab5/lab5_report.pdf), [імпорт та експорт](src/student_manager/reliable_io.py) |
 | 6 | Автоматизоване тестування | [Завдання](lab6/task/Lab_06_узгоджено_з_Lab_01.docx), [звіт](lab6/lab6_report.pdf), [експерименти](lab6/experiments.py), [тести](tests) |
+| 7 | Робота з базами даних у Python | [Завдання](lab7/task/Lab_07_узгоджено_з_Lab_01%20.docx), [звіт](lab7/lab7_report.pdf), [демо](src/student_manager/lab7_demo.py), [тести](tests) |
 
 Усі роботи продовжують один пакет. Стан першої роботи збережений у тегу `lab1`.
 
@@ -123,6 +124,27 @@ lab1/lab1_report.pdf - звіт
 ```powershell
 python lab6/experiments.py --output .local_workflow/lab6/testing_experiments_results.json
 ```
+
+## Робота 7: SQLite та SQLAlchemy
+
+База містить таблиці `groups` і `students` зі зв'язком one-to-many.
+Репозиторії виконують CRUD, пошук, фільтрацію та SQL-агрегації. Сервіс
+керує commit/rollback; масове переведення студентів є атомарним.
+Міграції Alembic створюють початкову схему, а потім додають nullable `email`.
+Вони включені до wheel, тому демонстрація працює і без клонованого репозиторію.
+
+```powershell
+python -m student_manager.main --lab7 students.sqlite
+student-manager --lab7 another_students.sqlite
+python -m pytest tests/test_persistence.py tests/test_migrations.py tests/test_dbapi.py -v
+```
+
+Демонстрація створює нову SQLite-базу, додає вигадані записи, змінює оцінку,
+переводить студента, перевіряє rollback і видалення. Наявний файл не перезаписує.
+Для ручного керування міграціями в репозиторії використовуйте `alembic upgrade head`;
+URL береться з `alembic.ini` або `DATABASE_URL`. Не задавайте production URL
+для навчальних демонстрацій. Сесія репозиторію належить викликачеві;
+після DB-level IntegrityError викликач має виконати rollback.
 
 ## Роботи 2-5
 

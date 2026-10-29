@@ -97,6 +97,7 @@ def main() -> None:
     )
     parser.add_argument("--lab4", action="store_true", help="показати об'єктну модель")
     parser.add_argument("--lab3", metavar="CSV", help="потокова обробка CSV")
+    parser.add_argument("--lab7", metavar="SQLITE", help="створити демонстраційну БД")
     parser.add_argument("--config", metavar="YAML", help="надійний імпорт та експорт")
     args = parser.parse_args()
     if args.lab2:
@@ -111,6 +112,10 @@ def main() -> None:
         from student_manager.lab3_demo import main as lab3_main
 
         raise SystemExit(lab3_main([args.lab3]))
+    elif args.lab7:
+        from student_manager.lab7_demo import main as lab7_main
+
+        raise SystemExit(lab7_main(["--database", args.lab7]))
     elif args.config:
         from student_manager.lab5_demo import run_lab5_demo
 
