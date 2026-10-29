@@ -174,7 +174,10 @@ def test_quick_cli_runs_same_real_spawn_pipeline_and_versioned_json(
     assert result["parameters"]["sizes"] == [24, 48, 96]
     assert result["parameters"]["repeats"] == 2
     assert result["runtime"]["spawn_executable"] == str(Path(sys.executable).resolve())
-    assert result["runtime"]["probe"]["executable"] == sys.executable
+    assert (
+        Path(result["runtime"]["probe"]["executable"]).resolve()
+        == Path(sys.executable).resolve()
+    )
     assert result["runtime"]["probe_command"][0] == str(Path(sys.executable).resolve())
     assert len(result["datasets"]) == 3
     for dataset in result["datasets"]:
