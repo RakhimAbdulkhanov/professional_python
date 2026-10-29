@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib.util
+import os
 from pathlib import Path
 
 import pytest
@@ -455,7 +456,7 @@ def test_factory_migrates_health_and_disposes(tmp_path: Path) -> None:
     with TestClient(app) as client:
         assert client.get("/health").json() == {
             "status": "ok",
-            "environment": "development",
+            "environment": os.getenv("ENVIRONMENT", "development"),
         }
         assert {"students", "groups", "alembic_version"} <= set(
             inspect(app.state.engine).get_table_names()

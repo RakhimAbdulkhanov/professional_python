@@ -44,7 +44,7 @@ jobs:
       - name: Type checking
         run: python -m mypy src
       - name: Tests with coverage
-        run: python -m pytest tests --cov=student_manager --cov-branch --cov-report=term-missing
+        run: python -m pytest tests --cov=student_manager --cov-branch --cov-report=term-missing --cov-fail-under=80
       - name: Build wheel and sdist
         run: |
           python -m build
