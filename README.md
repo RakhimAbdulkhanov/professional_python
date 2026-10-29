@@ -107,6 +107,8 @@ lab1/lab1_report.pdf - звіт
 | 6 | Автоматизоване тестування | [Завдання](lab6/task/Lab_06_узгоджено_з_Lab_01.docx), [звіт](lab6/lab6_report.pdf), [експерименти](lab6/experiments.py), [тести](tests) |
 | 7 | Робота з базами даних у Python | [Завдання](lab7/task/Lab_07_узгоджено_з_Lab_01%20.docx), [звіт](lab7/lab7_report.pdf), [демо](src/student_manager/lab7_demo.py), [тести](tests) |
 | 8 | Розробка REST API на FastAPI та асинхронного клієнта | [Завдання](lab8/task/Lab_08_узгоджено_з_Lab_01.docx), [звіт](lab8/lab8_report.pdf), [API](src/student_manager/api.py), [тести](tests) |
+| 9 | Профілювання, оптимізація та паралельні обчислення | [Завдання](lab9/task/Lab_09_узгоджено_з_Lab_01.docx), [звіт](lab9/lab9_report.pdf), [модуль](src/student_manager/performance.py), [тести](tests) |
+| 10 | Пакування, контейнеризація та CI/CD | [Завдання](lab10/task/Lab_10_узгоджено_з_Lab_01.docx), [звіт](lab10/lab10_report.pdf), [Dockerfile](Dockerfile), [CI](.github/workflows/ci.yml) |
 
 Усі роботи продовжують один пакет. Стан першої роботи збережений у тегу `lab1`.
 
