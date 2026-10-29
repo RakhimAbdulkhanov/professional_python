@@ -268,3 +268,14 @@ logging:
         cfg_path = self._write_yaml(yaml_content)
         with self.assertRaises(ConfigurationError):
             load_config(cfg_path)
+
+
+def test_default_settings() -> None:
+    from student_manager.config import Settings
+
+    settings = Settings()
+    assert settings.environment in {
+        "development",
+        "test",
+        "production",
+    }

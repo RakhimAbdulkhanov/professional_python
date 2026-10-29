@@ -587,3 +587,12 @@ def test_extremely_large_integer_ids_return_422() -> None:
             client.patch("/students/1", json={"group_id": overflow_id}).status_code
             == 422
         )
+
+
+def test_health() -> None:
+    from student_manager.api import app
+
+    client = TestClient(app)
+    response = client.get("/health")
+    assert response.status_code == 200
+    assert response.json()["status"] == "ok"

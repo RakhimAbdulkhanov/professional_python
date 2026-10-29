@@ -153,16 +153,18 @@ def create_app(database_url: str | None = None) -> FastAPI:
 
     @application.get("/health", response_model=HealthResponse)
     def health(request: Request) -> HealthResponse:
-        lock = getattr(request.app.state, "db_lock", None)
-        try:
-            if lock is not None:
-                with lock, request.app.state.engine.connect() as connection:
-                    connection.execute(text("SELECT 1"))
-            else:
-                with request.app.state.engine.connect() as connection:
-                    connection.execute(text("SELECT 1"))
-        except SQLAlchemyError:
-            raise HTTPException(503, "Database unavailable") from None
+        engine = getattr(request.app.state, "engine", None)
+        if engine is not None:
+            lock = getattr(request.app.state, "db_lock", None)
+            try:
+                if lock is not None:
+                    with lock, engine.connect() as connection:
+                        connection.execute(text("SELECT 1"))
+                else:
+                    with engine.connect() as connection:
+                        connection.execute(text("SELECT 1"))
+            except SQLAlchemyError:
+                raise HTTPException(503, "Database unavailable") from None
         return HealthResponse(
             status="ok", environment=os.getenv("ENVIRONMENT", "development")
         )

@@ -2,10 +2,12 @@
 
 import math
 from dataclasses import dataclass
+from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
 import yaml
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from student_manager.exceptions import ConfigurationError
 
@@ -190,3 +192,21 @@ def load_config(path: str | Path) -> AppConfig:
 
     validate_config(config)
     return config
+
+
+class Settings(BaseSettings):
+    app_name: str = "Student Manager"
+    environment: str = "development"
+    database_url: str = "sqlite:///app.db"
+    log_level: str = "INFO"
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
+
+
+@lru_cache
+def get_settings() -> Settings:
+    return Settings()

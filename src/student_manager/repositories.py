@@ -61,3 +61,14 @@ class InMemoryRepository(Repository[T]):
 
     def __contains__(self, key: int) -> bool:
         return key in self._items
+
+
+try:
+    from student_manager.persistence.repositories import (
+        GroupRepository,
+        StudentRepository,
+    )
+except ImportError:
+    pass
+
+__all__ = ["GroupRepository", "InMemoryRepository", "Repository", "StudentRepository"]
