@@ -106,6 +106,7 @@ lab1/lab1_report.pdf - звіт
 | 5 | Обробка помилок, файли та серіалізація | [Завдання](lab5/task/Lab_05_узгоджено_з_Lab_01.docx), [звіт](lab5/lab5_report.pdf), [імпорт та експорт](src/student_manager/reliable_io.py) |
 | 6 | Автоматизоване тестування | [Завдання](lab6/task/Lab_06_узгоджено_з_Lab_01.docx), [звіт](lab6/lab6_report.pdf), [експерименти](lab6/experiments.py), [тести](tests) |
 | 7 | Робота з базами даних у Python | [Завдання](lab7/task/Lab_07_узгоджено_з_Lab_01%20.docx), [звіт](lab7/lab7_report.pdf), [демо](src/student_manager/lab7_demo.py), [тести](tests) |
+| 8 | Розробка REST API на FastAPI та асинхронного клієнта | [Завдання](lab8/task/Lab_08_узгоджено_з_Lab_01.docx), [звіт](lab8/lab8_report.pdf), [API](src/student_manager/api.py), [тести](tests) |
 
 Усі роботи продовжують один пакет. Стан першої роботи збережений у тегу `lab1`.
 
