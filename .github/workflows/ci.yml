@@ -1,0 +1,183 @@
+name: CI
+
+"on":
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+    defaults:
+      run:
+        shell: bash
+    env:
+      PYTHONPATH: ""
+      MYPYPATH: ""
+      ENVIRONMENT: test
+      LOG_LEVEL: INFO
+      CONTAINER_NAME: student-manager-${{ github.run_id }}-${{ github.run_attempt }}
+      VOLUME_NAME: student-manager-data-${{ github.run_id }}-${{ github.run_attempt }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install development dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e '.[dev]' build
+      - name: Ruff lint
+        run: python -m ruff check src tests lab6 lab9
+      - name: Ruff format
+        run: python -m ruff format --check src tests lab6 lab9
+      - name: Type checking
+        run: python -m mypy src
+      - name: Tests with coverage
+        run: python -m pytest tests --cov=student_manager --cov-branch --cov-report=term-missing --cov-fail-under=80
+      - name: Build wheel and sdist
+        run: |
+          python -m build
+          python - <<'PY'
+          from pathlib import Path
+          assert len(list(Path('dist').glob('*.whl'))) == 1
+          assert len(list(Path('dist').glob('*.tar.gz'))) == 1
+          PY
+      - name: Prepare live API smoke test
+        run: |
+          cat > "$RUNNER_TEMP/api_smoke.py" <<'PY'
+          import json
+          import os
+          import time
+          import urllib.error
+          import urllib.request
+          from pathlib import Path
+
+          base = os.environ['SMOKE_BASE_URL']
+          state = Path(os.environ['SMOKE_STATE'])
+
+          def request(path, payload=None):
+              data = None if payload is None else json.dumps(payload).encode()
+              req = urllib.request.Request(
+                  base + path, data=data,
+                  headers={'Content-Type': 'application/json'},
+              )
+              with urllib.request.urlopen(req, timeout=3) as response:
+                  assert response.status == (200 if data is None else 201)
+                  return json.load(response)
+
+          for attempt in range(60):
+              try:
+                  health = request('/health')
+                  break
+              except (OSError, urllib.error.URLError):
+                  if attempt == 59:
+                      raise
+                  time.sleep(1)
+          assert health['status'] == 'ok', health
+          assert health['environment'] == os.environ['ENVIRONMENT'], health
+          schema = request('/openapi.json')
+          assert '/students' in schema['paths']
+          if os.environ.get('SMOKE_MODE', 'write') == 'write':
+              group = request('/groups', {'name': 'CI group'})
+              student = request('/students', {
+                  'first_name': 'CI', 'last_name': 'Student',
+                  'group_id': group['id'], 'average_grade': 91.5,
+              })
+              state.write_text(json.dumps(student), encoding='utf-8')
+          expected = json.loads(state.read_text(encoding='utf-8'))
+          actual = request('/students/' + str(expected['student_id']))
+          assert actual == expected, (actual, expected)
+          members = request('/groups/' + str(expected['group_id']) + '/students')
+          assert any(item == expected for item in members), members
+          stats = request('/groups/' + str(expected['group_id']) + '/statistics')
+          assert stats['count'] == 1 and stats['average'] == 91.5, stats
+          print('Live health, OpenAPI, student create/read and group statistics verified')
+          PY
+      - name: Install and smoke-test packaged application
+        run: |
+          python -m venv "$RUNNER_TEMP/package-env"
+          py="$RUNNER_TEMP/package-env/bin/python"
+          "$py" -m pip install dist/*.whl
+          "$py" -m pip check
+          cd "$RUNNER_TEMP"
+          "$py" - <<'PY'
+          from pathlib import Path
+          import sys
+          import student_manager
+          assert Path(student_manager.__file__).is_relative_to(Path(sys.prefix)), student_manager.__file__
+          PY
+          "$RUNNER_TEMP/package-env/bin/student-manager" --demo
+          export DATABASE_URL="sqlite:///$RUNNER_TEMP/package.sqlite"
+          export SMOKE_BASE_URL=http://127.0.0.1:8765
+          export SMOKE_STATE="$RUNNER_TEMP/package-state.json"
+          "$py" -m uvicorn student_manager.api:app --host 127.0.0.1 --port 8765 > "$RUNNER_TEMP/package-api.log" 2>&1 &
+          api_pid=$!
+          trap 'kill -TERM "$api_pid" 2>/dev/null || true; cat "$RUNNER_TEMP/package-api.log"' EXIT
+          "$py" "$RUNNER_TEMP/api_smoke.py"
+          kill -TERM "$api_pid"
+          wait "$api_pid"
+          trap - EXIT
+          cat "$RUNNER_TEMP/package-api.log"
+      - name: Upload distributions
+        if: matrix.python-version == '3.11'
+        uses: actions/upload-artifact@v4
+        with:
+          name: distributions
+          path: dist/*
+          if-no-files-found: error
+      - name: Build Docker image
+        if: matrix.python-version == '3.11'
+        run: docker build --tag student-manager:ci .
+      - name: Run container with writable persistent volume
+        if: matrix.python-version == '3.11'
+        env:
+          ENVIRONMENT: production
+        run: |
+          docker volume create "$VOLUME_NAME"
+          docker run --detach --name "$CONTAINER_NAME" \
+            --publish 127.0.0.1:8766:8000 \
+            --mount "type=volume,source=$VOLUME_NAME,target=/app/data" \
+            --env DATABASE_URL=sqlite:////app/data/students.sqlite \
+            --env ENVIRONMENT --env LOG_LEVEL student-manager:ci
+          export SMOKE_BASE_URL=http://127.0.0.1:8766
+          export SMOKE_STATE="$RUNNER_TEMP/container-state.json"
+          python "$RUNNER_TEMP/api_smoke.py"
+          docker exec "$CONTAINER_NAME" python -c "import os; from pathlib import Path; assert os.getuid() != 0; p = Path('/app/data/students.sqlite'); assert p.is_file(); assert os.access(p.parent, os.W_OK); assert os.access(p, os.W_OK)"
+          for attempt in $(seq 1 30); do
+            health=$(docker inspect --format '{{.State.Health.Status}}' "$CONTAINER_NAME")
+            if [ "$health" = healthy ]; then break; fi
+            sleep 1
+          done
+          test "$health" = healthy
+          docker stop --time 15 "$CONTAINER_NAME"
+          test "$(docker inspect --format '{{.State.ExitCode}}' "$CONTAINER_NAME")" = 0
+          docker rm "$CONTAINER_NAME"
+          docker run --detach --name "$CONTAINER_NAME" \
+            --publish 127.0.0.1:8766:8000 \
+            --mount "type=volume,source=$VOLUME_NAME,target=/app/data" \
+            --env DATABASE_URL=sqlite:////app/data/students.sqlite \
+            --env ENVIRONMENT --env LOG_LEVEL student-manager:ci
+          SMOKE_MODE=read python "$RUNNER_TEMP/api_smoke.py"
+          docker stop --time 15 "$CONTAINER_NAME"
+          test "$(docker inspect --format '{{.State.ExitCode}}' "$CONTAINER_NAME")" = 0
+      - name: Container logs and cleanup
+        if: always() && matrix.python-version == '3.11'
+        run: |
+          if docker container inspect "$CONTAINER_NAME" > /dev/null 2>&1; then
+            docker logs "$CONTAINER_NAME"
+            docker rm --force "$CONTAINER_NAME"
+          fi
+          if docker volume inspect "$VOLUME_NAME" > /dev/null 2>&1; then
+            docker volume rm "$VOLUME_NAME"
+          fi
