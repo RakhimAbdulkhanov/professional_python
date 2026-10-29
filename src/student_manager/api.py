@@ -39,12 +39,19 @@ def get_session(request: Request) -> Generator[Session, None, None]:
     lock = getattr(request.app.state, "db_lock", None)
     if lock is not None:
         lock.acquire()
-    session = request.app.state.session_factory()
+    factory = getattr(request.app.state, "session_factory", None)
+    if factory is None:
+        from student_manager.database import SessionLocal
+
+        factory = SessionLocal
+    session = factory()
+    engine = getattr(request.app.state, "engine", None)
+    dialect_name = engine.dialect.name if engine is not None else "sqlite"
     try:
         session.begin()
         if (
             request.method in {"POST", "PATCH", "PUT", "DELETE"}
-            and request.app.state.engine.dialect.name == "sqlite"
+            and dialect_name == "sqlite"
         ):
             session.connection(execution_options={"sqlite_immediate": True})
         yield session

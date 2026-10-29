@@ -197,14 +197,22 @@ def load_config(path: str | Path) -> AppConfig:
 class Settings(BaseSettings):
     app_name: str = "Student Manager"
     environment: str = "development"
+    app_env: str = "development"
     database_url: str = "sqlite:///app.db"
     log_level: str = "INFO"
+    api_host: str = "0.0.0.0"
+    api_port: int = 8000
+    api_token: str | None = None
 
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
         extra="ignore",
     )
+
+    @property
+    def is_production(self) -> bool:
+        return self.environment == "production" or self.app_env == "production"
 
 
 @lru_cache

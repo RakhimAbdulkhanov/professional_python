@@ -1,0 +1,16 @@
+services:
+  api:
+    build: .
+    image: student-manager:1.0.0
+    ports:
+      - "8000:8000"
+    environment:
+      - ENVIRONMENT=production
+      - LOG_LEVEL=INFO
+      - DATABASE_URL=sqlite:////app/data/students.sqlite
+    volumes:
+      - student_data:/app/data
+    restart: unless-stopped
+
+volumes:
+  student_data:

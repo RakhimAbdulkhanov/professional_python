@@ -1,99 +1,139 @@
 # Student Manager
 
-Навчальний проєкт з дисципліни «Професійний Python».
-Варіант 1: система обліку студентів.
+## Description
 
-Автор: Абдулханов Абдул-Рахім, група ФеП-33.
-Викладач: проф. Свелеба С. А.
+Навчальний наскрізний проєкт з дисципліни «Професійний Python».
+Варіант 1: система обліку студентів (packaging, configuration, Docker, REST API, CI/CD).
 
-## Можливості
+## Features
 
 - Додавання студента: ім'я, прізвище, група, середній бал.
 - Перегляд списку та пошук за групою без урахування регістру.
 - Визначення студента з найбільшим середнім балом.
 - Обчислення середнього бала вибраної групи.
-- Консольне меню, перевірка введення та демонстраційний режим.
+- Перенесення студентів між групами.
+- REST API на базі FastAPI з моніторингом працездатності (`/health`).
+- Реляційне збереження даних у SQLite через SQLAlchemy ORM з міграціями Alembic.
+- Контейнеризація в Docker з підтримкою volume для персистентності.
+- Автоматизований CI/CD пайплайн на GitHub Actions.
 
-Оцінка має бути числом від 0 до 100, текстові поля не можуть бути порожніми.
-Для порожньої групи середній бал відсутній, а не дорівнює нулю.
-Якщо кілька студентів мають однаковий найбільший бал, вибирається перший
-у списку. Однакові імена дозволені, бо вони не є унікальними ідентифікаторами.
+## Requirements
 
-## Встановлення
+- Python >= 3.11
+- Docker (опціонально для контейнеризації)
 
-Потрібен Python 3.11 або новіший. Для YAML-конфігурації використовується PyYAML;
-він встановлюється разом із пакетом.
+## Installation
 
-```powershell
+```bash
 python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-python -m pip install -e .
-```
-
-Linux/macOS: для активації використовуйте `source .venv/bin/activate`.
-
-Без активації у Windows можна виконувати команди через
-`.\.venv\Scripts\python.exe`.
-
-## Запуск
-
-Інтерактивне меню з порожнім списком студентів:
-
-```powershell
-python -m student_manager.main
-```
-
-Готовий приклад із чотирма навчальними записами:
-
-```powershell
-python -m student_manager.main --demo
-```
-
-Після встановлення доступна також команда `student-manager --demo`.
-Меню: `1` - додати, `2` - список, `3` - пошук за групою,
-`4` - найкращий студент, `5` - середній бал групи, `0` - вихід.
-
-У демонстраційному наборі група ФеП-33 має середній бал 88.07.
-Найкраща студентка - Ірина Бондар із балом 95.20.
-Це вигадані навчальні записи, не реальні персональні дані.
-
-**Обмеження Lab 1:** записи зберігаються в пам'яті до завершення програми.
-Збереження у файлах і базі даних передбачене наступними роботами.
-
-## Перевірка
-
-Базові тести попередніх робіт можна запускати через unittest. Повний suite
-роботи 6 використовує pytest і pytest-cov із dev dependencies:
-
-```powershell
+source .venv/bin/activate  # Windows: .venv\Scripts\Activate.ps1
 python -m pip install -e ".[dev]"
-python -m pytest --cov=student_manager --cov-branch --cov-report=term-missing --cov-report=html
-python -m unittest discover -s tests -v
 ```
 
-Поріг комбінованого покриття інструкцій і гілок - 80%. HTML-звіт створюється
-локально в `htmlcov/` і не публікується. Окремо можна запустити
-`python -m pytest tests/unit -v` або `python -m pytest tests/integration -v`.
+## Configuration
 
-Перевіряються модель, межі оцінок, порожні поля, пошук групи,
-середній бал, найкращий студент і консольні сценарії.
+Конфігурація застосунку передається через змінні середовища (12-Factor App) за допомогою Pydantic Settings:
+- `DATABASE_URL`: рядок підключення до БД (за замовчуванням `sqlite:///app.db` або `sqlite:////app/data/students.sqlite` у Docker)
+- `ENVIRONMENT` / `APP_ENV`: поточне середовище (`development`, `test`, `production`)
+- `LOG_LEVEL`: рівень логування (`DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`)
 
-## Структура
+Зразок налаштувань наведено у файлі `.env.example`.
+
+## Running locally
+
+Запуск REST API через uvicorn:
+```bash
+uvicorn student_manager.api:app --host 127.0.0.1 --port 8000 --reload
+```
+
+Запуск інтерактивного консольного інтерфейсу:
+```bash
+student-manager --demo
+```
+
+## Running with Docker
+
+Збірка Docker образу:
+```bash
+docker build -t student-manager:1.0 .
+```
+
+Запуск контейнера з підключенням volume для збереження даних:
+```bash
+docker run -d -p 8000:8000 -v student_data:/app/data -e ENVIRONMENT=production student-manager:1.0
+```
+
+Або за допомогою Docker Compose:
+```bash
+docker compose up -d
+```
+
+## API
+
+Основні REST API ендпоінти:
+- `GET /health` - перевірка працездатності сервісу та доступності БД
+- `POST /groups` - створення академічної групи
+- `GET /groups` - список груп
+- `POST /students` - створення картки студента
+- `GET /students` - фільтрація та список студентів
+- `GET /students/{student_id}` - перегляд інформації про студента
+- `GET /groups/{group_id}/students` - студенти вибраної групи
+- `GET /groups/{group_id}/statistics` - розрахунок статистики групи (кількість, середній бал)
+- `PATCH /students/{student_id}` - оновлення даних студента
+- `DELETE /students/{student_id}` - видалення студента
+
+Інтерактивна документація Swagger UI доступна за адресою `http://localhost:8000/docs`, а OpenAPI схема - за `http://localhost:8000/openapi.json`.
+
+## Testing
+
+Запуск повного набору тестів з перевіркою покриття (поріг 80%):
+```bash
+pytest --cov=student_manager --cov-branch --cov-report=term-missing
+```
+
+Перевірка статичної типізації та форматування:
+```bash
+mypy src
+ruff check src tests
+ruff format --check src tests
+```
+
+## Project structure
 
 ```text
-src/student_manager/
-    __init__.py   - версія пакета
-    models.py     - Student і перевірка його полів
-    services.py   - додавання, пошук і розрахунки
-    main.py       - консольне меню та демонстрація
-tests/            - автоматичні перевірки
-lab1/task/        - завдання викладача
-lab1/lab1_report.pdf - звіт
+├── .github/workflows/ci.yml  - GitHub Actions CI пайплайн
+├── src/student_manager/      - основний код пакета
+│   ├── api.py               - FastAPI застосунок та ендпоінти
+│   ├── config.py            - конфігурація та налаштування Pydantic Settings
+│   ├── database.py          - підключення до бази даних
+│   ├── models.py            - доменні моделі даних
+│   ├── repositories.py      - інтерфейси репозиторіїв
+│   ├── services.py          - бізнес-логіка
+│   └── main.py              - точка входу CLI
+├── tests/                   - набір автоматичних тестів
+├── migrations/              - міграції Alembic
+├── Dockerfile               - багатоетапна збірка контейнера
+├── docker-compose.yml       - запуск стеків контейнерів
+├── pyproject.toml           - специфікація пакета та залежності
+├── README.md                - документація
+└── LICENSE                  - ліцензія MIT
 ```
 
-`pyproject.toml` описує пакет і консольну команду.
-`src-layout` відділяє код пакета від звітів, завдань і тестів.
-Імпорт `student_manager.main` не запускає меню завдяки перевірці `__name__`.
+## CI/CD
+
+Автоматичний пайплайн GitHub Actions запускається на кожен push і pull request:
+1. Lint (ruff check)
+2. Format check (ruff format)
+3. Type check (mypy)
+4. Tests with coverage (pytest >= 80%)
+5. Build package (wheel, sdist)
+6. Smoke-test встановленого wheel у чистому віртуальному середовищі
+7. Docker image build та перевірка запуску з persistent volume та non-root user
+
+## Authors
+
+Виконав: студент групи ФеП-33 Абдулханов Абдул-Рахім.
+Викладач: проф. Свелеба С. А.
 
 ## Лабораторні роботи
 
